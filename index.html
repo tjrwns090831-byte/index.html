@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calisthenics Master</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #0D0E12;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+    </style>
+</head>
+<body class="text-white antialiased">
+
+    <div id="auth-screen" class="max-w-md mx-auto min-h-screen p-6 flex flex-col justify-center">
+        <div class="bg-[#17181F] rounded-3xl p-6 border border-white/5 shadow-2xl text-center">
+            <h1 class="text-2xl font-black tracking-wider text-[#00FF88] mb-2">CALISTHENICS MASTER</h1>
+            <p class="text-xs text-gray-400 mb-8">나만의 맨몸운동 데이터를 저장하세요</p>
+
+            <div class="space-y-4 text-left">
+                <div>
+                    <label class="text-xs font-bold text-gray-400 block mb-1.5">아이디 (ID)</label>
+                    <input type="text" id="user-id" class="w-full bg-[#222431] border border-white/10 rounded-xl h-12 px-4 text-sm focus:outline-none focus:border-[#00FF88]" placeholder="아이디를 입력하세요">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-400 block mb-1.5">비밀번호 (Password)</label>
+                    <input type="password" id="user-pw" class="w-full bg-[#222431] border border-white/10 rounded-xl h-12 px-4 text-sm focus:outline-none focus:border-[#00FF88]" placeholder="비밀번호를 입력하세요">
+                </div>
+            </div>
+
+            <div class="mt-8 space-y-3">
+                <button onclick="handleLogin()" class="w-full bg-[#00FF88] text-black font-black h-12 rounded-xl active:scale-[0.98] transition-transform text-sm">
+                    로그인하기
+                </button>
+                <button onclick="handleRegister()" class="w-full bg-[#222431] text-gray-300 font-bold h-12 rounded-xl active:scale-[0.98] transition-transform text-sm border border-white/5">
+                    첫 방문 가입하기
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="dashboard-screen" class="max-w-md mx-auto min-h-screen p-5 hidden flex flex-col justify-between">
+        <div>
+            <header class="py-4 flex justify-between items-center">
+                <h1 class="text-xl font-black tracking-wider text-[#00FF88]">CALISTHENICS MASTER</h1>
+                <button onclick="handleLogout()" class="text-xs bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg font-bold text-gray-400 active:bg-white/10">
+                    로그아웃
+                </button>
+            </header>
+
+            <div class="bg-[#17181F] rounded-2xl p-5 border border-white/5 flex justify-between items-center mt-2 shadow-lg">
+                <div>
+                    <p class="text-xs text-gray-400"><span id="user-display-name" class="text-[#00FF88] font-bold text-sm">유저</span> 훈련사님! 👋</p>
+                    <p class="text-base font-bold mt-1">오늘도 한계 돌파</p>
+                </div>
+                <div class="bg-red-500/10 px-3 py-1.5 rounded-full flex items-center gap-1">
+                    <i class="fa-solid fa-fire text-red-500 text-sm"></i>
+                    <span class="text-red-500 font-bold text-xs">3일 연속</span>
+                </div>
+            </div>
+
+            <p class="text-sm font-bold text-gray-400 mt-7 mb-3">마스터 프로그램 선택</p>
+
+            <div class="space-y-3.5">
+                <div onclick="openDetail('lsit')" class="bg-[#17181F] rounded-2xl p-4.5 flex items-center justify-between cursor-pointer active:scale-[0.98] transition-all border border-white/5 shadow-md">
+                    <div class="flex items-center gap-4 w-full">
+                        <div class="w-12 h-12 bg-[#222431] rounded-xl flex items-center justify-center text-[#00FF88] text-xl">
+                            <i class="fa-solid fa-child"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h3 class="font-bold text-base text-white">L-Sit 마스터</h3>
+                            <p class="text-xs text-gray-400 truncate mt-0.5">코어와 하부 승모근의 끝판왕</p>
+                            <div class="text-[11px] text-[#00FF88] font-semibold mt-2">
+                                현재 기록: <span id="dash-record-lsit">0</span>초
+                            </div>
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-white/20 text-xs ml-2"></i>
+                </div>
+
+                <div onclick="openDetail('handstand')" class="bg-[#17181F] rounded-2xl p-4.5 flex items-center justify-between cursor-pointer active:scale-[0.98] transition-all border border-white/5 shadow-md">
+                    <div class="flex items-center gap-4 w-full">
+                        <div class="w-12 h-12 bg-[#222431] rounded-xl flex items-center justify-center text-[#00FF88] text-xl">
+                            <i class="fa-solid fa-dumbbell"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h3 class="font-bold text-base text-white">물구나무 마스터</h3>
+                            <p class="text-xs text-gray-400 truncate mt-0.5">완벽한 수직 밸런스와 어깨 제어</p>
+                            <div class="text-[11px] text-[#00FF88] font-semibold mt-2">
+                                현재 기록: <span id="dash-record-handstand">0</span>초
+                            </div>
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-white/20 text-xs ml-2"></i>
+                </div>
+
+                <div onclick="openDetail('planche')" class="bg-[#17181F] rounded-2xl p-4.5 flex items-center justify-between cursor-pointer active:scale-[0.98] transition-all border border-white/5 shadow-md">
+                    <div class="flex items-center gap-4 w-full">
+                        <div class="w-12 h-12 bg-[#222431] rounded-xl flex items-center justify-center text-[#00FF88] text-xl">
+                            <i class="fa-solid fa-bolt"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h3 class="font-bold text-base text-white">플란체 마스터</h3>
+                            <p class="text-xs text-gray-400 truncate mt-0.5">중력을 거스르는 맨몸운동의 꽃</p>
+                            <div class="text-[11px] text-[#00FF88] font-semibold mt-2">
+                                현재 기록: <span id="dash-record-planche">0</span>초
+                            </div>
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-white/20 text-xs ml-2"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="detail-screen" class="max-w-md mx-auto min-h-screen p-5 hidden flex flex-col justify-between">
+        <div class="flex-1 flex flex-col">
+            <header class="py-4 flex items-center relative">
+                <button onclick="closeDetail()" class="absolute left-0 text-white p-2 active:opacity-50">
+                    <i class="fa-solid fa-chevron-left text-lg"></i>
+                </button>
+                <h2 id="detail-title" class="text-lg font-bold mx-auto">종목 마스터</h2>
+            </header>
+
+            <div class="bg-[#17181F] rounded-2xl p-4 border border-[#00FF88]/20 mt-4 mb-4 shadow-md">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-xs font-bold text-gray-400">내 최고 기록</span>
+                    <span id="detail-best-text" class="text-base font-black text-[#00FF88]">0초</span>
+                </div>
+                <div class="flex gap-2">
+                    <input type="number" id="input-skill-record" class="flex-1 bg-[#222431] border border-white/10 rounded-xl h-10 px-4 text-xs focus:outline-none text-[#00FF88] font-bold" placeholder="새로운 기록 입력 (초)">
+                    <button onclick="saveCurrentSkillRecord()" class="bg-[#00FF88] text-black font-bold px-4 rounded-xl text-xs active:scale-[0.95] transition-transform">
+                        기록 저장
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-[#17181F] rounded-2xl p-5 border border-white/5 mb-6 text-center shadow-md">
+                <p class="text-xs font-bold text-gray-400 mb-2">실시간 초시계 측정</p>
+                <div id="stopwatch-display" class="text-4xl font-black text-[#00FF88] tracking-wider my-3">0.00<span class="text-sm font-normal text-gray-400 ml-1">초</span></div>
+                
+                <div class="flex gap-2 mt-4">
+                    <button id="btn-timer-start" onclick="startStopwatch()" class="flex-1 bg-[#00FF88] text-black font-black h-11 rounded-xl text-xs active:scale-[0.95] transition-transform">
+                        <i class="fa-solid fa-play mr-1"></i> 측정 시작
+                    </button>
+                    <button id="btn-timer-stop" onclick="stopStopwatch()" class="flex-1 bg-red-500/10 border border-red-500/30 text-red-500 font-bold h-11 rounded-xl text-xs active:scale-[0.95] transition-transform hidden">
+                        <i class="fa-solid fa-stop mr-1"></i> 정지 및 기록적용
+                    </button>
+                    <button id="btn-timer-reset" onclick="resetStopwatch()" class="bg-[#222431] text-gray-400 font-bold px-4 rounded-xl text-xs active:scale-[0.95] transition-transform">
+                        리셋
+                    </button>
+                </div>
+            </div>
+
+            <p class="text-sm font-bold text-gray-400 mb-3">마스터 로드맵 단계</p>
+
+            <div id="steps-container" class="space-y-3 flex-1 overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-[#222431] border border-white/10 px-5 py-3 rounded-xl text-xs font-semibold opacity-0 pointer-events-none transition-opacity duration-300 shadow-2xl flex items-center gap-2 z-50 whitespace-nowrap">
+        <span id="toast-text">알림창 내용</span>
+    </div>
+
+
+    <script>
+        let currentSkillId = ''; 
+        const skillData = {
+            lsit: {
+                title: "L-Sit 마스터",
+                steps: [
+                    { level: "Lv.1", name: "턱 엘싯 (Tuck L-Sit)", target: "20초 버티기", unlocked: true },
+                    { level: "Lv.2", name: "원 레그 엘싯", target: "각 15초 버티기", unlocked: true },
+                    { level: "Lv.3", name: "로우 엘싯 (Low L-Sit)", target: "10초 버티기", unlocked: false },
+                    { level: "Lv.4", name: "풀 엘싯 (Full L-Sit)", target: "10초 버티기", unlocked: false }
+                ]
+            },
+            handstand: {
+                title: "물구나무 마스터",
+                steps: [
+                    { level: "Lv.1", name: "벽 대고 물구나무 버티기", target: "45초 버티기", unlocked: true },
+                    { level: "Lv.2", name: "벽 차고 떨어지기 밸런스", target: "5초 유지", unlocked: false },
+                    { level: "Lv.3", name: "자유 물구나무서기", target: "10초 유지", unlocked: false }
+                ]
+            },
+            planche: {
+                title: "플란체 마스터",
+                steps: [
+                    { level: "Lv.1", name: "플란체 린 (Planche Lean)", target: "20초 버티기", unlocked: true },
+                    { level: "Lv.2", name: "턱 플란체 (Tuck Planche)", target: "10초 버티기", unlocked: false }
+                ]
+            }
+        };
+
+        // 자동 로그인 확인
+        window.onload = function() {
+            const loggedInUser = localStorage.getItem('loginUser');
+            if (loggedInUser) { showDashboard(loggedInUser); }
+        };
+
+        // 회원가입
+        function handleRegister() {
+            const id = document.getElementById('user-id').value.trim();
+            const pw = document.getElementById('user-pw').value.trim();
+            if (!id || !pw) { showToast('❌ 아이디와 비밀번호를 입력해주세요.'); return; }
+            if (localStorage.getItem('user_' + id)) { showToast('❌ 이미 존재하는 아이디입니다.'); return; }
+            localStorage.setItem('user_' + id, pw);
+            showToast('🎉 가입 성공! 로그인 해주세요.');
+        }
+
+        // 로그인
+        function handleLogin() {
+            const id = document.getElementById('user-id').value.trim();
+            const pw = document.getElementById('user-pw').value.trim();
+            const savedPw = localStorage.getItem('user_' + id);
+            if (savedPw && savedPw === pw) {
+                localStorage.setItem('loginUser', id);
+                showToast('🔓 반갑습니다, 훈련사님!');
+                showDashboard(id);
+            } else { showToast('❌ 계정 정보가 틀렸습니다.'); }
+        }
+
+        // 로그아웃
+        function handleLogout() {
+            localStorage.removeItem('loginUser');
+            document.getElementById('dashboard-screen').classList.add('hidden');
+            document.getElementById('detail-screen').classList.add('hidden');
+            document.getElementById('auth-screen').classList.remove('hidden');
+            showToast('🔒 로그아웃 되었습니다.');
+        }
+
+        // 메인 화면 보여주기
+        function showDashboard(userId) {
+            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('dashboard-screen').classList.remove('hidden');
+            document.getElementById('user-display-name').innerText = userId;
+            ['lsit', 'handstand', 'planche'].forEach(skill => {
+                const rec = localStorage.getItem(`record_${userId}_${skill}`) || '0';
+                document.getElementById(`dash-record-${skill}`).innerText = rec;
+            });
+        }
+
+        // 상세 화면 열기
+        function openDetail(skillId) {
+            currentSkillId = skillId; 
+            const data = skillData[skillId];
+            const userId = localStorage.getItem('loginUser');
+            document.getElementById('detail-title').innerText = data.title;
+            const savedRec = localStorage.getItem(`record_${userId}_${skillId}`) || '0';
+            document.getElementById('detail-best-text').innerText = savedRec + "초";
+            document.getElementById('input-skill-record').value = ''; 
+            resetStopwatch(); // 초시계 초기화
+
+            const container = document.getElementById('steps-container');
+            container.innerHTML = '';
+            data.steps.forEach(step => {
+                const stepBox = document.createElement('div');
+                if (step.unlocked) {
+                    stepBox.className = "p-4 bg-[#17181F] rounded-xl flex items-center justify-between border border-white/5";
+                    stepBox.innerHTML = `
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 bg-[#222431] text-[#00FF88] rounded-lg flex items-center justify-center font-black text-xs">${step.level}</div>
+                            <div>
+                                <h4 class="font-bold text-sm text-white">${step.name}</h4>
+                                <p class="text-xs text-gray-400 mt-0.5">목표: ${step.target}</p>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-circle-play text-[#00FF88] text-xl"></i>
+                    `;
+                } else {
+                    stepBox.className = "p-4 bg-[#17181F]/40 rounded-xl flex items-center justify-between opacity-40 select-none";
+                    stepBox.innerHTML = `
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 bg-black/30 text-gray-500 rounded-lg flex items-center justify-center text-xs"><i class="fa-solid fa-lock"></i></div>
+                            <div>
+                                <h4 class="font-bold text-sm text-gray-400">${step.name}</h4>
+                                <p class="text-xs text-gray-600 mt-0.5">목표: ${step.target}</p>
+                            </div>
+                        </div>
+                    `;
+                }
+                container.appendChild(stepBox);
+            });
+            document.getElementById('dashboard-screen').classList.add('hidden');
+            document.getElementById('detail-screen').classList.remove('hidden');
+            window.scrollTo(0, 0);
+        }
+
+        // 기록 저장
+        function saveCurrentSkillRecord() {
+            const userId = localStorage.getItem('loginUser');
+            const val = document.getElementById('input-skill-record').value.trim();
+            if (!val) { showToast('⚠️ 기록할 시간을 입력해주세요.'); return; }
+            localStorage.setItem(`record_${userId}_${currentSkillId}`, val);
+            document.getElementById('detail-best-text').innerText = val + "초";
+            document.getElementById('input-skill-record').value = '';
+            showToast('💾 최고 기록이 저장되었습니다!');
+        }
+
+        // 상세 화면 닫기
+        function closeDetail() {
+            const userId = localStorage.getItem('loginUser');
+            showDashboard(userId);
+            document.getElementById('detail-screen').classList.add('hidden');
+            document.getElementById('dashboard-screen').classList.remove('hidden');
+        }
+
+        // 알림창 기능
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-text').innerText = message;
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            toast.classList.add('opacity-100');
+            setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 2000);
+        }
+
+        // ================= 초시계 기능 기능 수식들 =================
+        let timerInterval = null;
+        let elapsedTime = 0; 
+
+        function startStopwatch() {
+            if (timerInterval) return;
+            let startTime = Date.now() - elapsedTime;
+            timerInterval = setInterval(() => {
+                elapsedTime = Date.now() - startTime;
+                const seconds = (elapsedTime / 1000).toFixed(2);
+                document.getElementById('stopwatch-display').innerHTML = `${seconds}<span class="text-sm font-normal text-gray-400 ml-1">초</span>`;
+            }, 10);
+            document.getElementById('btn-timer-start').classList.add('hidden');
+            document.getElementById('btn-timer-stop').classList.remove('hidden');
+        }
+
+        function stopStopwatch() {
+            if (!timerInterval) return;
+            clearInterval(timerInterval);
+            timerInterval = null;
+            const finalSeconds = Math.round(elapsedTime / 1000);
+            document.getElementById('input-skill-record').value = finalSeconds;
+            document.getElementById('btn-timer-start').classList.remove('hidden');
+            document.getElementById('btn-timer-stop').classList.add('hidden');
+            showToast(`⏱️ ${finalSeconds}초가 입력되었습니다. '기록 저장'을 누르세요!`);
+        }
+
+        function resetStopwatch() {
+            clearInterval(timerInterval);
+            timerInterval = null;
+            elapsedTime = 0;
+            document.getElementById('stopwatch-display').innerHTML = `0.00<span class="text-sm font-normal text-gray-400 ml-1">초</span>`;
+            document.getElementById('btn-timer-start').classList.remove('hidden');
+            document.getElementById('btn-timer-stop').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>

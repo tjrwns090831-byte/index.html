@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 모션인식 - 절대 멈춤 방지</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    
+    <style>
+        body { background-color: #0D0E12; font-family: sans-serif; -webkit-tap-highlight-color: transparent; }
+        .camera-container { 
+            position: relative; width: 100%; aspect-ratio: 9/16; 
+            max-width: 420px; background-color: #17181F; 
+            border-radius: 1.25rem; overflow: hidden; 
+        }
+        /* 📹 카메라는 배경에 깔아서 무조건 부드럽게 나오게 함 */
+        #webcam { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-cover: cover; z-index: 1; }
+        /* 🎨 투명 도화지를 카메라 위에 얹어서 점만 그리게 함 */
+        #canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
+    </style>
+</head>
+<body class="text-white flex flex-col items-center min-h-screen p-5">
+
+    <header class="w-full max-w-sm my-6 flex justify-between items-center px-2">
+        <h1 class="text-xl font-black text-[#00FF88] tracking-wider">AI MOTION FIXED</h1>
+        <div id="status-badge" class="bg-red-500 text-xs px-3 py-1 rounded-full font-bold">오프라인</div>
+    </header>
+
+    <div class="camera-container border border-white/5 shadow-2xl relative">
+        <video id="webcam" autoplay playsinline muted></video>
+        <canvas id="canvas"></canvas>
+        
+        <div id="loading-overlay" class="absolute inset-0 bg-[#17181F] flex flex-col items-center justify-center p-8 z-20 transition-opacity duration-500">
+            <i class="fa-solid fa-spinner fa-spin text-4xl text-[#00FF88] mb-5"></i>
+            <p class="text-xs text-gray-500 text-center leading-relaxed">AI 엔진 준비 중...<br>화면이 켜진 후 잠시만 기다려주세요</p>
+        </div>
+    </div>
+
+    <div class="mt-8 w-full max-w-sm flex gap-3 pb-6">
+        <button id="btn-start" onclick="startAI()" class="flex-1 bg-[#00FF88] text-black font-black h-13 rounded-2xl active:scale-[0.98] transition-transform text-sm shadow-lg shadow-[#00FF88]/10">
+            <i class="fa-solid fa-play-circle mr-1"></i> AI 측정 시작
+        </button>
+        <button id="btn-stop" onclick="stopAI()" class="flex-1 bg-[#222431] text-gray-400 font-bold h-13 rounded-2xl active:scale-[0.98] transition-transform text-sm hidden">
+            <i class="fa-solid fa-stop-circle mr-1"></i> 중지
+        </button>
+    </div>
+
+    <script>
+        const videoElement = document.getElementById('webcam');
+        const canvasElement = document.getElementById('canvas');
+        const canvasCtx = canvasElement.getContext('2d');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const statusBadge = document.getElementById('status-badge');
+
+        let localStream = null;
+        let aiRunning = false;
+        let isProcessing = false; // 🔥 AI가 연산 중인지 체크하는 잠금장치
+
+        const pose = new Pose({locateFile: (file) => {
+            return `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`;
+        }});
+
+        pose.setOptions({
+            modelComplexity: 0, 
+            smoothLandmarks: true,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
+        });
+
+        pose.onResults(onPoseResults);
+
+        async function startAI() {
+            if (aiRunning) return;
+            aiRunning = true;
+            
+            statusBadge.innerText = '카메라 켜는 중'; 
+            statusBadge.classList.remove('bg-red-500'); 
+            statusBadge.classList.add('bg-yellow-500');
+            document.getElementById('btn-start').classList.add('hidden');
+            document.getElementById('btn-stop').classList.remove('hidden');
+            
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: "user", width: 480, height: 640 },
+                    audio: false
+                });
+                
+                videoElement.srcObject = localStream;
+                
+                // 카메라 영상이 실제로 나오기 시작하면 그때 로딩창을 걷어냅니다.
+                videoElement.addEventListener('loadedmetadata', () => {
+                    loadingOverlay.style.opacity = '0';
+                    setTimeout(() => loadingOverlay.style.display = 'none', 500);
+                    statusBadge.innerText = 'AI 분석중';
+                    statusBadge.classList.remove('bg-yellow-500');
+                    statusBadge.classList.add('bg-[#00FF88]');
+                    
+                    // AI 무한 루프 가동
+                    aiLoop();
+                });
+                
+            } catch (error) {
+                alert('카메라를 열 수 없습니다. 권한을 확인하세요!');
+                stopAI();
+            }
+        }
+
+        // 🔥 [핵심 수정] AI 연산이 밀려도 카메라는 절대 안 멈추게 만드는 루프
+        async function aiLoop() {
+            if (!aiRunning) return;
+
+            // AI가 이전 프레임을 분석하느라 바쁘면(isProcessing == true), 
+            // 이번 프레임은 과감히 패스하고 다음 화면으로 넘어갑니다! (프리즈 방지)
+            if (videoElement.readyState >= 2 && !isProcessing) {
+                isProcessing = true; 
+                pose.send({image: videoElement}).then(() => {
+                    isProcessing = false; // 분석 끝나면 잠금 해제
+                }).catch(() => {
+                    isProcessing = false;
+                });
+            }
+            
+            // 폰이 감당할 수 있는 속도로 무한 반복
+            requestAnimationFrame(aiLoop);
+        }
+
+        function stopAI() {
+            aiRunning = false;
+            isProcessing = false;
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+            }
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+            document.getElementById('btn-start').classList.remove('hidden');
+            document.getElementById('btn-stop').classList.add('hidden');
+            statusBadge.innerText = '오프라인'; 
+            statusBadge.classList.remove('bg-[#00FF88]'); 
+            statusBadge.classList.add('bg-red-500');
+            loadingOverlay.style.display = 'flex';
+            loadingOverlay.style.opacity = '1';
+        }
+
+        // AI가 몸을 찾았을 때 실행되는 함수
+        function onPoseResults(results) {
+            // 도화지 크기를 카메라 실제 크기와 맞추기
+            if (canvasElement.width !== videoElement.videoWidth) {
+                canvasElement.width = videoElement.videoWidth;
+                canvasElement.height = videoElement.videoHeight;
+            }
+
+            // 투명 도화지 싹 지우고 새로 그리기 (비디오는 배경에 있으므로 점만 지웠다 그림)
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
+            if (results.poseLandmarks) {
+                // 선과 점 그리기
+                drawConnectors(canvasCtx, results.poseLandmarks, POSE_CONNECTORS, {color: 'rgba(0, 255, 136, 0.4)', lineWidth: 2});
+                drawLandmarks(canvasCtx, results.poseLandmarks, {color: '#00FF88', lineWidth: 1, radius: 4});
+            }
+        }
+    </script>
+</body>
+</html>
